@@ -1,6 +1,7 @@
-- OpenShift cluster
-- `OC` CLI tool installed - [Click here](https://access.redhat.com/downloads/content/290/ver=4.9/rhel---7/4.9.0/x86_64/product-software) to download
-- `git` CLI tool installed
+- Access to the OpenShift cluster
+- `CP VPN` connected
+- `OC` CLI tool installed - [Click here]() to download
+- `virtctl` tool installed - [Click here] () to download
 - GitHub account
 
 
@@ -28,28 +29,17 @@ Get the "kubeadmin" (the OpenShift administrator user) password.
 
 To get the *kubeadmin-password* we'll need to grab it from the OpenShift installation directory on the server in which the cluster was installed from, or in our case the "bastion" node. Let's jump over to that machine to get it.
 
-From within this lab guide, SSH to the bastion node
+From within this lab guide, SSH to the bastion node (Server with OC client)
 
 ```execute-1
 ssh < bastion-username >@< bastion-host >
 ```
 
-When you see the prompt, if required, agree to the SSH certificates by typing "yes", and then enter **bastion-password** as the password. Then you can execute following command to get the kubeadmin password
-
-```execute-1
-cat < kubeadmin-password-file >
-```
-
-Note the password (or copy it) and exit the ssh session
-
-```execute-1
-exit
-```
-
+When you see the prompt, if required, agree to the SSH certificates by typing "yes", and then enter **bastion-password** as the password. 
 In the new tab that you've opened up you should be presented with the OpenShift login screen, enter the following credentials
 
-- Username: *kubeadmin*
-- Password: (the password you previously copied)
+- Username: *your user*
+- Password: (your password)
 
 The first time you access the web console, you will most likely be in the *Administrator* perspective. At the top of the left navigation menu, you can toggle between the Administrator perspective and the Developer perspective.
 
