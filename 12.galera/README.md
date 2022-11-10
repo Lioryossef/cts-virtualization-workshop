@@ -1,45 +1,210 @@
-Access to the instances could be via SSH. This blog performs all actions using the personal workstation's direct access with SSH and not with OpenShift Web Console. Access to the VM remotely via SSH is important for both safety reasons (ssh being an encrypted protocol) and ease of use. The NodePort service could be configured via UI by enabling the "Expose SSH access to this virtual machine" in the VM creation wizard ( Starting from OpenShift Virtualization 4.8) or by yaml. So let's see how to expose VMs with the NodePort service.
+## Create a Service for Galera Cluster 
 
-- The UI option( OpenShift version > 4.8) by enabling the "Expose SSH access to this virtual machine" exists in the VM creation wizard. 
+It was necessary to create a service for each VM that is going to join our Galera cluster. Galera cluster requires network connectivity between the nodes with many ports. For this reason, a cluster-internal IP (“ClusterIP”) is allocated for each VM, which enables the VMs to communicate with each other. Here is an overview of the ports and their uses:
 
-<img width="701" alt="Screen Shot 2022-11-10 at 15 00 29" src="https://user-images.githubusercontent.com/64369864/201098102-1cc948b6-8497-4356-927b-09c991a97a23.png">
+- 3306 is the default port for MySQL client connections and state snapshot transfer using MySQL dump for backups.
+- 4567 is reserved for Galera cluster replication traffic. Multicast replication uses both TCP and UDP transport on this port.
+- 4568 is the port for incremental state transfer.
+- 4444 is used for all other state snapshot transfers.
 
-- As an alternative way to create the NodePort, click Networking → Services and click Create Service.
+### For example, a snapshot of yaml configuration for the first VM in my project (mariadb-0).
 
-<img width="673" alt="Screen Shot 2022-11-10 at 15 10 17" src="https://user-images.githubusercontent.com/64369864/201100202-bd3a5123-d67c-4cba-a38a-5a7543de778f.png">
-
-- For example, a snapshot of yaml configuration that exposes the first VM in my project (mariadb-0). The service type is NodePort and the TCP port is 22. 
 ```
 apiVersion: v1
 kind: Service
 metadata:
   name: <service name>
-  namespace: <name spase>
+  namespace: <namespace>
 spec:
-  externalTrafficPolicy: Cluster
-  ports:
-    - port: 22
-      protocol: TCP
   selector:
     kubevirt.io/domain: <VM name>
-  type: NodePort
+  ports:
+    - protocol: TCP
+      name: tcp-3306
+      port: 3306
+      targetPort: 3306
+    - protocol: TCP
+      name: tcp-4567
+      port: 4567
+      targetPort: 4567
+    - protocol: TCP
+      name: tcp-4568
+      port: 4568
+      targetPort: 4568
+    - protocol: TCP
+      name: tcp-4444
+      port: 4444
+      targetPort: 4444
+    - protocol: UDP
+      name: udp-4567
+      port: 4567
+      targetPort: 4567
+```
+
+<img width="666" alt="Screen Shot 2022-11-10 at 15 29 40" src="https://user-images.githubusercontent.com/64369864/201104431-3711b3c6-7bd0-4a85-b543-c6d4d0e684e1.png">
+
+<img width="657" alt="Screen Shot 2022-11-10 at 15 29 59" src="https://user-images.githubusercontent.com/64369864/201104495-daf174ca-92a5-4b4e-afe3-f418a95bdd88.png">
+
+### Firewall Rules for MariaDB 
+
+- Opening these ports via the firewall for each VM that is going to join our Galera cluster. This step allows us to access the ports. 
 
 ```
-<img width="679" alt="Screen Shot 2022-11-10 at 15 11 28" src="https://user-images.githubusercontent.com/64369864/201100471-756c2391-e273-4cef-abdd-b7844909ff5f.png">
+sudo firewall-cmd --permanent --zone=public --add-port=3306/tcp
+sudo firewall-cmd --permanent --zone=public --add-port=4567/tcp
+sudo firewall-cmd --permanent --zone=public --add-port=4568/tcp
+sudo firewall-cmd --permanent --zone=public --add-port=4444/tcp
+sudo firewall-cmd --permanent --zone=public --add-port=4567/udp
+```
 
-> Perform the same steps for each VM in the project.
+- Reload the firewall to apply the changes.
+```
+sudo firewall-cmd --reload
+```
+- Stop Selinux (Selinux is not a part from this lab)
+```
+setenforce 0
+```
 
-Click on the service → Service Details page that shows the port assigned to the service, which in my example is 30116.
+## Create Galera Cluster 
+### Install and Configure the MariaDB First Instance
+- The MariaDB first instance is the most important instance at installation, this instance will essentially be the “primary” in our cluster. Without this instance, nothing can be started and the cluster cannot be created. From this instance all other instances will launch, connect to and sync up with.
 
-<img width="702" alt="Screen Shot 2022-11-10 at 15 12 24" src="https://user-images.githubusercontent.com/64369864/201100666-fe9e9a82-4f68-4194-9ada-bdcfc957a486.png">
+- Install the actual MariaDB and Galera packages.
+```
+sudo dnf module install mariadb/galera
+```
+- Configure the MariaDB instance.
+```
+sudo vi /etc/my.cnf
+```
 
-For direct access, you would need to use the port and any cluster node IP address.
-Click Compute → Nodes and click on the relevant worker to enter its Node Details page to see the IP address of the node. In my example, the IP is 10.20.0.202.
+```
+[galera]
+wsrep_on=ON
+wsrep_cluster_name=<'galera_cluster’> 
+binlog_format=ROW
+bind-address=0.0.0.0
 
-<img width="677" alt="Screen Shot 2022-11-10 at 15 13 15" src="https://user-images.githubusercontent.com/64369864/201100814-9eb866fb-5fc2-4fb4-85c7-5b47b8760027.png">
+default-storage-engine=InnoDB
+innodb_autoinc_lock_mode=2
+innodb_doublewrite=1
+query_cache_size=0
+wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so
 
-Open a SSH connection from the workstation to the VM using the information from the Node and Service details.
+wsrep_cluster_address=gcomm://
 
-<img width="673" alt="Screen Shot 2022-11-10 at 15 13 42" src="https://user-images.githubusercontent.com/64369864/201100907-43904300-32f9-4d0d-94bb-64ad93f6b513.png">
+wsrep_sst_method=rsync
+wsrep_dirty_reads=ON
+wsrep-sync-wait=0
+
+wsrep_node_address=<'mariadb-0-ports.galera-cluster.svc.cluster.local'>
+
+!includedir /etc/my.cnf.d
+```
+> Enter the cluster name
+> Enter the IP address or service that allocate to the first VM
+
+- Start the mariaDB service.
+```
+sudo systemctl start mariadb
+```
+- Check the service status.
+
+```
+sudo systemctl status mariadb
+```
+<img width="418" alt="Screen Shot 2022-11-10 at 15 37 10" src="https://user-images.githubusercontent.com/64369864/201106051-2d0d0198-924d-4660-a1d6-c0e58e367fea.png">
+
+- Stop the MariaDB service and run galera command. This command will start the service automatically.
+```
+systemctl stop mariadb
+
+galera_new_cluster
+
+```
+## Connect to MariaDB and Check the Cluster Size
+- Connect to MariaDB.
+```
+mysql -u root -p 
+
+SHOW STATUS LIKE 'wsrep_cluster_size';
+```
+
+> This is the first instance of the cluster, so it will have a cluster size of one.
+
+<img width="672" alt="Screen Shot 2022-11-10 at 15 40 11" src="https://user-images.githubusercontent.com/64369864/201106767-27e5725a-df07-4afd-bfd9-851fe6ba591d.png">
+
+## Install and Configure the MariaDB Second Instance
+
+The second instance is the instance that essentially creates High availability, this instance is a second instance that can be written to, read from, and acts like a normal DB. This instance connects to the first MariaDB instance.
+
+- Install the actual MariaDB and Galera packages.
+```
+sudo dnf module install mariadb/galera
+```
+- Configure the MariaDB instance.
+
+```
+sudo vi /etc/my.cnf
+```
+```
+[galera]
+wsrep_on=ON
+wsrep_cluster_name=<'galera_cluster'>
+binlog_format=ROW
+bind-address=0.0.0.0
+
+default-storage-engine=InnoDB
+innodb_autoinc_lock_mode=2
+innodb_doublewrite=1
+query_cache_size=0
+wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so
+
+wsrep_cluster_address=gcomm://<mariadb-0-ports.galera-cluster.svc.cluster.local,mariadb-1-ports.galera-cluster.svc.cluster.local> 
+
+wsrep_provider_options="ist.recv_bind=10.0.2.2" 
+
+
+wsrep_sst_method=rsync
+wsrep_dirty_reads=ON
+wsrep-sync-wait=0
+
+wsrep_node_address=<'mariadb-1-ports.galera-cluster.svc.cluster.local'> 
+
+!includedir /etc/my.cnf.d
+```
+> Enter the cluster name.
+> Enter the IP address or service for each VM that is going to join our Galera cluster. 
+> Enter the Internal IP address, In OpenShift Virtualization, is always 10.0.2.2.
+> Enter the IP address or service that allocate to the second VM.
+
+- Start the MariaDB service 
+```
+sudo systemctl start mariadb
+```
+- Check the service status
+```
+sudo systemctl status mariadb
+```
+## Ensure the Cluster is Created 
+
+Return to the first instance and check the cluster size. The size changed to two, that is the cluster has two instances and thus is highly available for our database. This is important to make sure that the cluster has indeed increased and that our second instance has joined properly. This step also signifies the ability to write and read from both maria-0 and maria-1. When both instances join the cluster they both can be accessed equally and the replication is done automatically.
+
+- Connect to MariaDB.
+```
+mysql -u root -p 
+
+SHOW STATUS LIKE ‘wsrep_cluster_size’;
+```
+
+<img width="677" alt="Screen Shot 2022-11-10 at 15 44 57" src="https://user-images.githubusercontent.com/64369864/201107810-6fd4247c-f893-4e98-a578-d8b7f948ae2e.png">
+
+
+
+
+
+
+
 
 
