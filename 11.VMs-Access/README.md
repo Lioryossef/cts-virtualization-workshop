@@ -1,25 +1,45 @@
-In this lab, we will use the OpenShift Web Console to deploy the frontend and backend components, which comprises of one frontend web application, and 2 databases:
+Access to the instances could be via SSH. This blog performs all actions using the personal workstation's direct access with SSH and not with OpenShift Web Console. Access to the VM remotely via SSH is important for both safety reasons (ssh being an encrypted protocol) and ease of use. The NodePort service could be configured via UI by enabling the "Expose SSH access to this virtual machine" in the VM creation wizard ( Starting from OpenShift Virtualization 4.8) or by yaml. So let's see how to expose VMs with the NodePort service.
 
-### 1. Creating the Project
+- The UI option( OpenShift version > 4.8) by enabling the "Expose SSH access to this virtual machine" exists in the VM creation wizard. 
 
-As a first step, we need to create a project where ParksMap application will be deployed. You can create the project with the following command:
+<img width="701" alt="Screen Shot 2022-11-10 at 15 00 29" src="https://user-images.githubusercontent.com/64369864/201098102-1cc948b6-8497-4356-927b-09c991a97a23.png">
 
-```execute
-oc new-project workshop-< Your name >-namespace
+- As an alternative way to create the NodePort, click Networking → Services and click Create Service.
+
+<img width="673" alt="Screen Shot 2022-11-10 at 15 10 17" src="https://user-images.githubusercontent.com/64369864/201100202-bd3a5123-d67c-4cba-a38a-5a7543de778f.png">
+
+- For example, a snapshot of yaml configuration that exposes the first VM in my project (mariadb-0). The service type is NodePort and the TCP port is 22. 
 ```
+apiVersion: v1
+kind: Service
+metadata:
+  name: <service name>
+  namespace: <name spase>
+spec:
+  externalTrafficPolicy: Cluster
+  ports:
+    - port: 22
+      protocol: TCP
+  selector:
+    kubevirt.io/domain: <VM name>
+  type: NodePort
 
-### 2. Navigate to the OpenShift Web Console
+```
+<img width="679" alt="Screen Shot 2022-11-10 at 15 11 28" src="https://user-images.githubusercontent.com/64369864/201100471-756c2391-e273-4cef-abdd-b7844909ff5f.png">
 
-Select the blue "**Console**" button at the top of the window to follow the steps below in the OpenShift web console as part of this lab guide.
+> Perform the same steps for each VM in the project.
 
-### 3. Create VMs from Openshift console
-- Click Virtualization → Create Virtual Machine.
-- Choose a template, In this case, Red Hat Enterprise Linux 8.0+ was chosen.
+Click on the service → Service Details page that shows the port assigned to the service, which in my example is 30116.
 
-<img width="704" alt="Screen Shot 2022-11-10 at 14 35 24" src="https://user-images.githubusercontent.com/64369864/201093126-6de8d0c2-5649-4933-b4d4-0e6d67f39737.png">
+<img width="702" alt="Screen Shot 2022-11-10 at 15 12 24" src="https://user-images.githubusercontent.com/64369864/201100666-fe9e9a82-4f68-4194-9ada-bdcfc957a486.png">
 
-- Provide a custom boot source
+For direct access, you would need to use the port and any cluster node IP address.
+Click Compute → Nodes and click on the relevant worker to enter its Node Details page to see the IP address of the node. In my example, the IP is 10.20.0.202.
 
-<img width="680" alt="Screen Shot 2022-11-10 at 14 36 26" src="https://user-images.githubusercontent.com/64369864/201093317-fa7f8aff-8b80-4683-9aa1-68e21e62f618.png">
+<img width="677" alt="Screen Shot 2022-11-10 at 15 13 15" src="https://user-images.githubusercontent.com/64369864/201100814-9eb866fb-5fc2-4fb4-85c7-5b47b8760027.png">
 
-<img width="694" alt="Screen Shot 2022-11-10 at 14 38 10" src="https://user-images.githubusercontent.com/64369864/201093624-5cd2b95c-9911-48c6-81eb-56d366279c3c.png">
+Open a SSH connection from the workstation to the VM using the information from the Node and Service details.
+
+<img width="673" alt="Screen Shot 2022-11-10 at 15 13 42" src="https://user-images.githubusercontent.com/64369864/201100907-43904300-32f9-4d0d-94bb-64ad93f6b513.png">
+
+
