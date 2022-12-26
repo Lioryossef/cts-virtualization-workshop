@@ -1,14 +1,40 @@
-## Create a Service for Galera Cluster 
+## Ensure the DNS record 
 
-It was necessary to create a service for each VM that is going to join our Galera cluster. Galera cluster requires network connectivity between the nodes with many ports. For this reason, a cluster-internal IP (“ClusterIP”) is allocated for each VM, which enables the VMs to communicate with each other. Here is an overview of the ports and their uses:
+  1. Create VM for test DNS record 
 
-- 3306 is the default port for MySQL client connections and state snapshot transfer using MySQL dump for backups.
-- 4567 is reserved for Galera cluster replication traffic. Multicast replication uses both TCP and UDP transport on this port.
-- 4568 is the port for incremental state transfer.
-- 4444 is used for all other state snapshot transfers.
+<img width="722" alt="Screen Shot 2022-12-26 at 11 32 11" src="https://user-images.githubusercontent.com/64369864/209532315-1f605611-3283-48f8-8bc7-f41389ce4adf.png">
 
-### For example, a snapshot of yaml configuration for the first VM in my project (mariadb-0).
+<img width="723" alt="Screen Shot 2022-12-26 at 11 32 41" src="https://user-images.githubusercontent.com/64369864/209532363-5f198a1d-a469-458f-9a97-c6d11e7d924c.png">
 
+  2. Connect to the workstation VM install the actual bind-utils packages.
+
+`sudo dnf install bind-utils`
+
+  3. Check the DNS record. 
+
+`dig <record>.<zone> @<powerdns IP>`
+
+<img width="649" alt="Screen Shot 2022-12-26 at 11 34 17" src="https://user-images.githubusercontent.com/64369864/209532537-ad9fea03-1b1f-4187-bf65-caac8f8c5250.png">
+
+## What is the Value of High-availability?
+
+In this section of my blog I want us to understand the importance and value that the high-availability we have created gives us. As we saw at DB steps the data replicated and synchronized, the PowerDNS instance configured works with the second MariaDB instance(mariadb-1). Now first I check the DNS record and then I will create another DNS instance that will work with the first MariaDB instance(mariadb-0). Finally I will stop one of the mariadb instances to simulate a failure and we will see that our service remains available and prevents downtime to the customer.
+
+  1. Create one more PowerDNS instance (powerdns-1). 
+
+<img width="711" alt="Screen Shot 2022-12-26 at 11 36 04" src="https://user-images.githubusercontent.com/64369864/209532739-d42b547e-d556-4e5f-b017-33d3d60d9b67.png">
+
+<img width="717" alt="Screen Shot 2022-12-26 at 11 36 27" src="https://user-images.githubusercontent.com/64369864/209532770-9b284f62-bc30-471d-a3a0-95baee442f65.png">
+
+  2. Create label and allocate for each PowerDNS instance.
+
+<img width="590" alt="Screen Shot 2022-12-26 at 11 38 57" src="https://user-images.githubusercontent.com/64369864/209533025-3a3d73ea-a42c-4843-a4de-8818eaeb1a22.png">
+
+<img width="699" alt="Screen Shot 2022-12-26 at 11 39 31" src="https://user-images.githubusercontent.com/64369864/209533109-9c4421f1-261f-49b3-ad23-1af9fac6de5b.png">
+
+<img width="693" alt="Screen Shot 2022-12-26 at 11 41 08" src="https://user-images.githubusercontent.com/64369864/209533280-3bc30a2f-b36a-4b2b-bccf-515debda514d.png">
+
+  3. Create a DNS service for PowerDNS instances
 ```
 apiVersion: v1
 kind: Service
@@ -17,194 +43,62 @@ metadata:
   namespace: <namespace>
 spec:
   selector:
-    kubevirt.io/domain: <VM name>
+    < label >
   ports:
-    - protocol: TCP
-      name: tcp-3306
-      port: 3306
-      targetPort: 3306
-    - protocol: TCP
-      name: tcp-4567
-      port: 4567
-      targetPort: 4567
-    - protocol: TCP
-      name: tcp-4568
-      port: 4568
-      targetPort: 4568
-    - protocol: TCP
-      name: tcp-4444
-      port: 4444
-      targetPort: 4444
     - protocol: UDP
-      name: udp-4567
-      port: 4567
-      targetPort: 4567
+      name: udp-53
+      port: 53
+      targetPort: 53
 ```
+<img width="600" alt="Screen Shot 2022-12-26 at 11 41 55" src="https://user-images.githubusercontent.com/64369864/209533374-2a746ea7-3d70-4335-abfd-ff5bf2bb52c8.png">
 
-<img width="666" alt="Screen Shot 2022-11-10 at 15 29 40" src="https://user-images.githubusercontent.com/64369864/201104431-3711b3c6-7bd0-4a85-b543-c6d4d0e684e1.png">
-
-<img width="657" alt="Screen Shot 2022-11-10 at 15 29 59" src="https://user-images.githubusercontent.com/64369864/201104495-daf174ca-92a5-4b4e-afe3-f418a95bdd88.png">
-
-### Firewall Rules for MariaDB 
-
-- Opening these ports via the firewall for each VM that is going to join our Galera cluster. This step allows us to access the ports. 
+  4. Connect to the powerdns-1 instance and configure the instance.
+```
+sudo vi /etc/pdns/pdns.conf
 
 ```
-sudo firewall-cmd --permanent --zone=public --add-port=3306/tcp
-sudo firewall-cmd --permanent --zone=public --add-port=4567/tcp
-sudo firewall-cmd --permanent --zone=public --add-port=4568/tcp
-sudo firewall-cmd --permanent --zone=public --add-port=4444/tcp
-sudo firewall-cmd --permanent --zone=public --add-port=4567/udp
 ```
-
-- Reload the firewall to apply the changes.
+launch=gmysql
+gmysql-host=<mariadb-ports.galera-cluster.svc.cluster.local>
+gmysql-dbname=powerdns
+gmysql-user=<pdns>
+gmysql-password=<qwe123>
+api=yes
+api-key=dbpass
+webserver-address=127.0.0.1
+logging-facility=0
+loglevel=5
+log-dns-queries=yes
+resolver=[::1]:53
+expand-alias=yes
 ```
-sudo firewall-cmd --reload
-```
-- Stop Selinux (Selinux is not a part from this lab)
-```
-setenforce 0
-```
+### NOTE: If SElinux mode is enforced, create a SELinux policy that will allow that.
 
-## Create Galera Cluster 
-### Install and Configure the MariaDB First Instance
-- The MariaDB first instance is the most important instance at installation, this instance will essentially be the “primary” in our cluster. Without this instance, nothing can be started and the cluster cannot be created. From this instance all other instances will launch, connect to and sync up with.
+  4. Start pdns service.
+`sudo systemctl start pdns`
 
-- Install the actual MariaDB and Galera packages.
-```
-sudo dnf module install mariadb/galera
-```
-- Configure the MariaDB instance.
-```
-sudo vi /etc/my.cnf
-```
+  5. The DNS zone and record that I created before are automatically replicated and synced thanks to DB sync.
 
-```
-[galera]
-wsrep_on=ON
-wsrep_cluster_name=<'galera_cluster’> 
-binlog_format=ROW
-bind-address=0.0.0.0
+  6. Add the IP addresses of the DNS service from step 2 to the resolve.conf file of the workstation instance. The IPs will be overwritten by NetworkManage. The intention here is to show the HA for the DNS service in the next steps, another option is to use the dig common with PowerDNS service IP like: ‘dig <record>.<zone> @<powerdns IP>’ or with nmcli.
 
-default-storage-engine=InnoDB
-innodb_autoinc_lock_mode=2
-innodb_doublewrite=1
-query_cache_size=0
-wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so
+`vi /etc/resolv.conf` 
 
-wsrep_cluster_address=gcomm://
+<img width="684" alt="Screen Shot 2022-12-26 at 11 44 52" src="https://user-images.githubusercontent.com/64369864/209533740-e3b4c753-29f7-4e5b-87c4-1fcd9610cc57.png">
 
-wsrep_sst_method=rsync
-wsrep_dirty_reads=ON
-wsrep-sync-wait=0
+  7. Check the DNS record.
 
-wsrep_node_address=<'mariadb-0-ports.galera-cluster.svc.cluster.local'>
+<img width="612" alt="Screen Shot 2022-12-26 at 11 45 42" src="https://user-images.githubusercontent.com/64369864/209533824-b8965d4d-d9e3-432f-b845-48aae7d0e922.png">
 
-!includedir /etc/my.cnf.d
-```
-> Enter the cluster name
-> Enter the IP address or service that allocate to the first VM
+  8. Stop the first instance (mariadb-0).
+<img width="721" alt="Screen Shot 2022-12-26 at 11 46 12" src="https://user-images.githubusercontent.com/64369864/209533880-a1a49b2e-5b91-401f-9f4d-5f531a037582.png">
 
-- Start the mariaDB service.
-```
-sudo systemctl start mariadb
-```
-- Check the service status.
+  9. Connect to the workstation instance and verify if the DNS record is still available. Pay attention to the server that answers.
+<img width="631" alt="Screen Shot 2022-12-26 at 11 46 49" src="https://user-images.githubusercontent.com/64369864/209533960-c6d423eb-822f-480c-af87-6a8f0b74a7b6.png">
 
-```
-sudo systemctl status mariadb
-```
-<img width="418" alt="Screen Shot 2022-11-10 at 15 37 10" src="https://user-images.githubusercontent.com/64369864/201106051-2d0d0198-924d-4660-a1d6-c0e58e367fea.png">
+### NOTE: We saw that still had a connection to the mariadb-1instance and the DNS service remains available to the customer. That is, given that because I created a service that has a list backed for the DB instances and a service that has a list backed for the DNS instances the customer at the end gets one address and we are calm that our service remains available even if a DNS server or a DB server falls.
 
-- Stop the MariaDB service and run galera command. This command will start the service automatically.
-```
-systemctl stop mariadb
-
-galera_new_cluster
-
-```
-## Connect to MariaDB and Check the Cluster Size
-- Connect to MariaDB.
-```
-mysql -u root -p 
-
-SHOW STATUS LIKE 'wsrep_cluster_size';
-```
-
-> This is the first instance of the cluster, so it will have a cluster size of one.
-
-<img width="672" alt="Screen Shot 2022-11-10 at 15 40 11" src="https://user-images.githubusercontent.com/64369864/201106767-27e5725a-df07-4afd-bfd9-851fe6ba591d.png">
-
-## Install and Configure the MariaDB Second Instance
-
-The second instance is the instance that essentially creates High availability, this instance is a second instance that can be written to, read from, and acts like a normal DB. This instance connects to the first MariaDB instance.
-
-- Install the actual MariaDB and Galera packages.
-```
-sudo dnf module install mariadb/galera
-```
-- Configure the MariaDB instance.
-
-```
-sudo vi /etc/my.cnf
-```
-```
-[galera]
-wsrep_on=ON
-wsrep_cluster_name=<'galera_cluster'>
-binlog_format=ROW
-bind-address=0.0.0.0
-
-default-storage-engine=InnoDB
-innodb_autoinc_lock_mode=2
-innodb_doublewrite=1
-query_cache_size=0
-wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so
-
-wsrep_cluster_address=gcomm://<mariadb-0-ports.galera-cluster.svc.cluster.local,mariadb-1-ports.galera-cluster.svc.cluster.local> 
-
-wsrep_provider_options="ist.recv_bind=10.0.2.2" 
-
-
-wsrep_sst_method=rsync
-wsrep_dirty_reads=ON
-wsrep-sync-wait=0
-
-wsrep_node_address=<'mariadb-1-ports.galera-cluster.svc.cluster.local'> 
-
-!includedir /etc/my.cnf.d
-```
-> Enter the cluster name.
-> Enter the IP address or service for each VM that is going to join our Galera cluster. 
-> Enter the Internal IP address, In OpenShift Virtualization, is always 10.0.2.2.
-> Enter the IP address or service that allocate to the second VM.
-
-- Start the MariaDB service 
-```
-sudo systemctl start mariadb
-```
-- Check the service status
-```
-sudo systemctl status mariadb
-```
-## Ensure the Cluster is Created 
-
-Return to the first instance and check the cluster size. The size changed to two, that is the cluster has two instances and thus is highly available for our database. This is important to make sure that the cluster has indeed increased and that our second instance has joined properly. This step also signifies the ability to write and read from both maria-0 and maria-1. When both instances join the cluster they both can be accessed equally and the replication is done automatically.
-
-- Connect to MariaDB.
-```
-mysql -u root -p 
-
-SHOW STATUS LIKE ‘wsrep_cluster_size’;
-```
-
-<img width="677" alt="Screen Shot 2022-11-10 at 15 44 57" src="https://user-images.githubusercontent.com/64369864/201107810-6fd4247c-f893-4e98-a578-d8b7f948ae2e.png">
-
-
-
-
-
-
-
-
-
+## Conclusion
+As we have seen the data is synchronized and replicated between the members of the cluster. As a result, the DNS service will be available even if Galera cluster members fail. 
+High availability is crucial when delivering a service to customers. It allows administrators to ensure continuous service availability, improve service mainability, as well as the ability to fix problems with no or minimal impact to customers.
+OpenShift Virtualization allows you to run highly available VM workloads and ensures they will keep running even in a case of VM failures. 
+This blog is part of a large and interesting project that allows us to set up a highly available DNS service on Kubernetes using the Galera cluster. This type of deployment benefits from Kubernetes cloud-native advantages and unified API that are used to simplify the configuration and management of containers and VMs on the same platform. 
