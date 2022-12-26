@@ -1,13 +1,55 @@
-## Create a Service for Galera Cluster 
+## Create a User for the PowerDNS Server
 
-It was necessary to create a service for each VM that is going to join our Galera cluster. Galera cluster requires network connectivity between the nodes with many ports. For this reason, a cluster-internal IP (“ClusterIP”) is allocated for each VM, which enables the VMs to communicate with each other. Here is an overview of the ports and their uses:
+Allowing access to our database remotely is important due to it being a separate instance from our PowerDNS. Creating a database user and allowing it access.
+  1. Create a user by the following command.
 
-- 3306 is the default port for MySQL client connections and state snapshot transfer using MySQL dump for backups.
-- 4567 is reserved for Galera cluster replication traffic. Multicast replication uses both TCP and UDP transport on this port.
-- 4568 is the port for incremental state transfer.
-- 4444 is used for all other state snapshot transfers.
+`create user <’username’> identified by <’password’>;` 
 
-### For example, a snapshot of yaml configuration for the first VM in my project (mariadb-0).
+  2. Permit the user that was created to access the instance remotely.
+
+```
+grant all privileges on powerdns.* to <’username’>@’%’ identified by <'password'>;
+
+flush privileges;
+```
+
+<img width="678" alt="Screen Shot 2022-12-26 at 11 00 09" src="https://user-images.githubusercontent.com/64369864/209528763-6eab80ad-489a-4187-8e8d-54de3e782103.png">
+
+<img width="327" alt="Screen Shot 2022-12-26 at 11 00 32" src="https://user-images.githubusercontent.com/64369864/209528804-d96c1a1b-53e3-4173-bbb3-4208ede41eab.png">
+
+## Install and Configure the PowerDNS
+
+  1. Connect to the PowerDNS instance and Install the actual PowerDNS packages.
+
+```
+dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+yum-config-manager --disable epel
+dnf install --enablerepo=epel -y pdns pdns-backend-mysql
+```
+
+  2. Copy the structure of the tables for the PowerDNS database
+
+`cat /usr/share/doc/pdns/schema.mysql.sql` 
+
+<img width="685" alt="Screen Shot 2022-12-26 at 11 02 34" src="https://user-images.githubusercontent.com/64369864/209529015-1395fbe8-7319-4619-8757-266024a49ac0.png">
+
+  3. Connect to MariaDB from the first instance (mariadb-0).
+
+`mysql -u root -p`
+
+  4. Create in mariadb-0 instance the structure of the tables for the PowerDNS database by running the following MySQL queries below.
+
+`use powerdns;`
+
+  5. Paste the schema from the ‘/usr/share/doc/pdns/schema.mysql.sql’ file.
+
+  6. Create a label and one service for all mariadb instances
+
+  7. Create a label and allocate to each mariadb instances for example mariadb1
+
+  <img width="693" alt="Screen Shot 2022-12-26 at 11 04 27" src="https://user-images.githubusercontent.com/64369864/209529233-b6383b19-9078-4cf4-b88a-40a201c5dc55.png">
+
+<img width="687" alt="Screen Shot 2022-12-26 at 11 05 04" src="https://user-images.githubusercontent.com/64369864/209529287-b814a50e-5040-46bb-930e-3dca0b403e62.png">
 
 ```
 apiVersion: v1
@@ -17,7 +59,7 @@ metadata:
   namespace: <namespace>
 spec:
   selector:
-    kubevirt.io/domain: <VM name>
+    < label >
   ports:
     - protocol: TCP
       name: tcp-3306
@@ -41,170 +83,62 @@ spec:
       targetPort: 4567
 ```
 
-<img width="666" alt="Screen Shot 2022-11-10 at 15 29 40" src="https://user-images.githubusercontent.com/64369864/201104431-3711b3c6-7bd0-4a85-b543-c6d4d0e684e1.png">
+<img width="700" alt="Screen Shot 2022-12-26 at 11 06 04" src="https://user-images.githubusercontent.com/64369864/209529384-5eb9cd71-f2d2-4770-a881-7094eb0b570f.png">
 
-<img width="657" alt="Screen Shot 2022-11-10 at 15 29 59" src="https://user-images.githubusercontent.com/64369864/201104495-daf174ca-92a5-4b4e-afe3-f418a95bdd88.png">
+  8. Return to the powerdns-0 instance and configure the instance.
 
-### Firewall Rules for MariaDB 
-
-- Opening these ports via the firewall for each VM that is going to join our Galera cluster. This step allows us to access the ports. 
+`sudo vi /etc/pdns/pdns.conf`
 
 ```
-sudo firewall-cmd --permanent --zone=public --add-port=3306/tcp
-sudo firewall-cmd --permanent --zone=public --add-port=4567/tcp
-sudo firewall-cmd --permanent --zone=public --add-port=4568/tcp
-sudo firewall-cmd --permanent --zone=public --add-port=4444/tcp
-sudo firewall-cmd --permanent --zone=public --add-port=4567/udp
+launch=gmysql
+gmysql-host=<mariadb-ports.galera-cluster.svc.cluster.local>
+gmysql-dbname=powerdns
+gmysql-user=<pdns>
+gmysql-password=<qwe123>
+api=yes
+api-key=dbpass
+webserver-address=127.0.0.1
+logging-facility=0
+loglevel=5
+log-dns-queries=yes
+resolver=[::1]:53
+expand-alias=yes
 ```
 
-- Reload the firewall to apply the changes.
-```
-sudo firewall-cmd --reload
-```
-- Stop Selinux (Selinux is not a part from this lab)
-```
-setenforce 0
-```
+### NOTE: If SElinux mode is enforced, create a SELinux policy that will allow that.
 
-## Create Galera Cluster 
-### Install and Configure the MariaDB First Instance
-- The MariaDB first instance is the most important instance at installation, this instance will essentially be the “primary” in our cluster. Without this instance, nothing can be started and the cluster cannot be created. From this instance all other instances will launch, connect to and sync up with.
+  9. Start pdns service 
 
-- Install the actual MariaDB and Galera packages.
-```
-sudo dnf module install mariadb/galera
-```
-- Configure the MariaDB instance.
-```
-sudo vi /etc/my.cnf
-```
+`sudo systemctl start pdns`
+
+  10. Create a DNS zone and record.
 
 ```
-[galera]
-wsrep_on=ON
-wsrep_cluster_name=<'galera_cluster’> 
-binlog_format=ROW
-bind-address=0.0.0.0
-
-default-storage-engine=InnoDB
-innodb_autoinc_lock_mode=2
-innodb_doublewrite=1
-query_cache_size=0
-wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so
-
-wsrep_cluster_address=gcomm://
-
-wsrep_sst_method=rsync
-wsrep_dirty_reads=ON
-wsrep-sync-wait=0
-
-wsrep_node_address=<'mariadb-0-ports.galera-cluster.svc.cluster.local'>
-
-!includedir /etc/my.cnf.d
-```
-> Enter the cluster name
-> Enter the IP address or service that allocate to the first VM
-
-- Start the mariaDB service.
-```
-sudo systemctl start mariadb
-```
-- Check the service status.
-
-```
-sudo systemctl status mariadb
-```
-<img width="418" alt="Screen Shot 2022-11-10 at 15 37 10" src="https://user-images.githubusercontent.com/64369864/201106051-2d0d0198-924d-4660-a1d6-c0e58e367fea.png">
-
-- Stop the MariaDB service and run galera command. This command will start the service automatically.
-```
-systemctl stop mariadb
-
-galera_new_cluster
-
-```
-## Connect to MariaDB and Check the Cluster Size
-- Connect to MariaDB.
-```
-mysql -u root -p 
-
-SHOW STATUS LIKE 'wsrep_cluster_size';
+sudo pdnsutil create-zone <domain_name>
+sudo pdnsutil add-record <domain_name> <record> A <ip_address>
 ```
 
-> This is the first instance of the cluster, so it will have a cluster size of one.
+<img width="674" alt="Screen Shot 2022-12-26 at 11 08 50" src="https://user-images.githubusercontent.com/64369864/209529708-23678ca5-966e-498d-b06e-8435ad6c0c82.png">
 
-<img width="672" alt="Screen Shot 2022-11-10 at 15 40 11" src="https://user-images.githubusercontent.com/64369864/201106767-27e5725a-df07-4afd-bfd9-851fe6ba591d.png">
-
-## Install and Configure the MariaDB Second Instance
-
-The second instance is the instance that essentially creates High availability, this instance is a second instance that can be written to, read from, and acts like a normal DB. This instance connects to the first MariaDB instance.
-
-- Install the actual MariaDB and Galera packages.
+  11. Once the DNS zone is created the record will be stored in our database. In this step check the record data on the first instance (mariadb-0).
 ```
-sudo dnf module install mariadb/galera
-```
-- Configure the MariaDB instance.
+mysql -u root -p
+
+use powerdns;
+
+select  * from domains; 
 
 ```
-sudo vi /etc/my.cnf
+<img width="685" alt="Screen Shot 2022-12-26 at 11 10 03" src="https://user-images.githubusercontent.com/64369864/209529844-1e9bf00d-56b9-49c6-b023-d9dff06af62a.png">
+
 ```
+select * from records;
 ```
-[galera]
-wsrep_on=ON
-wsrep_cluster_name=<'galera_cluster'>
-binlog_format=ROW
-bind-address=0.0.0.0
+<img width="704" alt="Screen Shot 2022-12-26 at 11 10 50" src="https://user-images.githubusercontent.com/64369864/209529917-d40530e4-e3b9-4c86-b14d-1e5d5940f277.png">
 
-default-storage-engine=InnoDB
-innodb_autoinc_lock_mode=2
-innodb_doublewrite=1
-query_cache_size=0
-wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so
+  12. Repeat the command to check the record data on the second instance (mariadb-1). This step shows that the data has indeed been replicated and thus any data that will be created on one of the instances will replicate to the other one
 
-wsrep_cluster_address=gcomm://<mariadb-0-ports.galera-cluster.svc.cluster.local,mariadb-1-ports.galera-cluster.svc.cluster.local> 
+<img width="708" alt="Screen Shot 2022-12-26 at 11 11 32" src="https://user-images.githubusercontent.com/64369864/209530008-90004f8a-e30f-432c-bc3d-32fa7a200ef0.png">
 
-wsrep_provider_options="ist.recv_bind=10.0.2.2" 
-
-
-wsrep_sst_method=rsync
-wsrep_dirty_reads=ON
-wsrep-sync-wait=0
-
-wsrep_node_address=<'mariadb-1-ports.galera-cluster.svc.cluster.local'> 
-
-!includedir /etc/my.cnf.d
-```
-> Enter the cluster name.
-> Enter the IP address or service for each VM that is going to join our Galera cluster. 
-> Enter the Internal IP address, In OpenShift Virtualization, is always 10.0.2.2.
-> Enter the IP address or service that allocate to the second VM.
-
-- Start the MariaDB service 
-```
-sudo systemctl start mariadb
-```
-- Check the service status
-```
-sudo systemctl status mariadb
-```
-## Ensure the Cluster is Created 
-
-Return to the first instance and check the cluster size. The size changed to two, that is the cluster has two instances and thus is highly available for our database. This is important to make sure that the cluster has indeed increased and that our second instance has joined properly. This step also signifies the ability to write and read from both maria-0 and maria-1. When both instances join the cluster they both can be accessed equally and the replication is done automatically.
-
-- Connect to MariaDB.
-```
-mysql -u root -p 
-
-SHOW STATUS LIKE ‘wsrep_cluster_size’;
-```
-
-<img width="677" alt="Screen Shot 2022-11-10 at 15 44 57" src="https://user-images.githubusercontent.com/64369864/201107810-6fd4247c-f893-4e98-a578-d8b7f948ae2e.png">
-
-
-
-
-
-
-
-
+<img width="707" alt="Screen Shot 2022-12-26 at 11 11 45" src="https://user-images.githubusercontent.com/64369864/209530029-2ef9250d-e3d0-4493-97cc-bf8cea811731.png">
 
