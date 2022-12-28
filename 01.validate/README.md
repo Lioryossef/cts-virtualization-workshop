@@ -1,7 +1,7 @@
 # Before we begin, it's important to make sanity tests
 
 Check your user
-
+ 
 ```execute
 oc whoami
 ```
