@@ -4,7 +4,7 @@ formerly known as OpenShift Container Storage/OCS - a software storage platform 
 ```execute-1
 oc get sc
 ```
-
+ 
 This command should show the list of Storage Classes that are installed:
 
 ~~~bash
