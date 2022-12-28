@@ -12,7 +12,7 @@ oc new-project workshop-< Your name >-namespace
 
 Select the blue "**Console**" button at the top of the window to follow the steps below in the OpenShift web console as part of this lab guide.
 
-### 3. Create VMs from Openshift console
+### 3. Create VMs from Openshift console (Repeat the process for each machine) 
 - Click Virtualization → Create Virtual Machine.
 - Choose a template, In this case, Red Hat Enterprise Linux 8.0+ was chosen.
 
