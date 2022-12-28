@@ -6,7 +6,7 @@ Now we're going to clone a workload and see that it's identical to the source of
 - Install a basic application inside the VM.
 - Clone the VM
 - Test the clone to make sure it's identical to the source
-
+ 
 ### Virtual Machine
 
 Now let's create a VM based on the Fedora image, that will become our original VM that we'll clone in a later step. For review we are using the PVC with CDI importing the Fedora image (stored on ODF/OCS), and we are utilising the standard networking on the workers - the same as we've been using for the other virtual machines we created previously
