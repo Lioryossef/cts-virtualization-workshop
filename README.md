@@ -12,18 +12,15 @@ In these labs, you'll utilize a virtual environment. In this hands-on lab, you w
 - Prerequisites
 - Exploring the OpenShift CLI and Web Console
 - Validating the Lab environment
-- Deploying OpenShift Virtualization
 - Setting up storage for OpenShift Virtualization
 - Deploying workloads on OpenShift Virtualization
 - Performing Live Migration and Node Maintenance
 - Cloning a Virtual Machine
-- An overview of network for OpenShift Virtualization
 - An overview of OpenShift console
 - Exploring virtual machine templates and boot sources
-- Deploying a real-world application example with ParksMap
+- Deploying a DNS application base Galera DB
 - Performing Backup and Restore of Virtual Machines
 - Add a hot-plug disk to Virtual Machines
-- Implementing Network Isolation for Virtual Machines
 
 ## To do the exercises, follow the steps presented in the workshop’s [presentation](https://docs.google.com/presentation/d/12zjIQTX8l54CMMRRsCl7ZlTsnx5PrnUqaFtQ9qP73Aw/edit#slide=id.gb710eccc1a_0_2256).
 
