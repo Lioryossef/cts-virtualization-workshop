@@ -25,17 +25,9 @@ OpenShift ships with a web-based console that will allow users to perform variou
 
 <img width="434" alt="Screen Shot 2022-08-08 at 12 08 52" src="https://user-images.githubusercontent.com/64369864/183382562-9850df4c-d07b-4faa-af47-71d1f864dde3.png">
 
-Get the "kubeadmin" (the OpenShift administrator user) password. 
+#### User
 
-To get the *kubeadmin-password* we'll need to grab it from the OpenShift installation directory on the server in which the cluster was installed from, or in our case the "bastion" node. Let's jump over to that machine to get it.
-
-From within this lab guide, SSH to the bastion node (Server with OC client)
-
-```execute-1
-ssh < bastion-username >@< bastion-host >
-```
-
-When you see the prompt, if required, agree to the SSH certificates by typing "yes", and then enter **bastion-password** as the password. 
+When you see the prompt, if required, agree to the SSH certificates by typing "yes", and then enter **user-password** as the password. 
 In the new tab that you've opened up you should be presented with the OpenShift login screen, enter the following credentials
 
 - Username: *your user*
