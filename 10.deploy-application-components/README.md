@@ -2,7 +2,7 @@ In this lab, we will use the OpenShift Web Console to deploy the frontend and ba
 
 ### 1. Creating the Project
 
-As a first step, we need to create a project where ParksMap application will be deployed. You can create the project with the following command:
+As a first step, we need to create a project where our application will be deployed. You can create the project with the following command:
 
 ```execute
 oc new-project workshop-< Your name >-namespace
