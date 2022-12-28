@@ -20,7 +20,7 @@ To create snapshots of an online (Running state) VM with the highest integrity, 
 
 > **NOTE**: The qemu-guest-agent is widely available and available by default in Red Hat virtual machines. It might be already installed and enabled on the virtual machine used in this lab module, but we'll quickly show you how to install and enable it.
 
-1. Navigate to the OpenShift Web UI so we can access the console of the your virtual machine (in my example `mongodb-nationalparks` virtual machine). From the "**Administrator**" view, you'll need to select "**Virtualization**" --> "**Virtual Machines**" --> "**mongodb-nationalparks**" --> "**Console**". You'll be able to login with "**redhat/openshift**", noting that you may have to click on the console window for it to capture your input
+1. Navigate to the OpenShift Web UI so we can access the console of the your virtual machine (In my example `mongodb-nationalparks` virtual machine). From the "**Administrator**" view, you'll need to select "**Virtualization**" --> "**Virtual Machines**" --> "**mongodb-nationalparks**" --> "**Console**". You'll be able to login with "**redhat/openshift**", noting that you may have to click on the console window for it to capture your input
 
 ![image](https://user-images.githubusercontent.com/64369864/183264035-0c444f5d-5693-4c46-9f69-d90e38dc6333.png)
 
@@ -49,7 +49,7 @@ Virtual machine (VM) snapshots can be created either by using the web console, o
    
 2. Click the **Virtual Machines** tab (if it's not already selected).
    
-3. Select `mongodb-nationalparks` virtual machine to open its **Overview** screen.
+3. Select **your virtual machine** (In my example `mongodb-nationalparks` virtual machine) virtual machine to open its **Overview** screen.
 
 4. Click the **Snapshots** tab and then click **Take Snapshot**.
 
@@ -276,7 +276,7 @@ To see how to restore the VM in the CLI, let's delete the VM's boot disk complet
 
 2. Click the **Virtual Machines** tab.
 
-3. Select `mongodb-nationalparks` virtual machine to open its **Overview** screen.
+3. Select **your virtual machine** (In my example `mongodb-nationalparks` virtual machine) virtual machine to open its **Overview** screen.
 
 4. If the virtual machine is running, click **Actions** → **Stop Virtual Machine** to power it down.
 
