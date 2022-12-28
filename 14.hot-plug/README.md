@@ -15,7 +15,7 @@ In this exercise, let's attach a new 2GB disk to one of our MongoDB database VM'
    
 2. Click the **Virtual Machines** tab.
    
-3. Select `mongodb-nationalparks` virtual machine to open its **Overview** screen.
+3. Select **your virtual machine** (In my example `mongodb-nationalparks` virtual machine) to open its **Overview** screen.
 
 4. On the **Disks** tab, click **Add Disk**.
 
@@ -38,7 +38,7 @@ To verify if the new 5GB disk is recognised and ready to use by the guest operat
    
 2. Click the **Virtual Machines** tab.
    
-3. Select `mongodb-nationalparks` virtual machine to open its **Overview** screen.
+3. Select  **your virtual machine** (In my example `mongodb-nationalparks` virtual machine) to open its **Overview** screen.
 
 4. Navigate to the "**Console**" tab. You'll be able to login with "**redhat/openshift**", noting that you may have to click on the console window for it to capture your input.
 
@@ -64,7 +64,7 @@ OpenShift allows users to easily resize an existing PersistentVolumeClaim (PVC) 
    
 2. Click the **Virtual Machines** tab.
    
-3. Select `mongodb-nationalparks` virtual machine to open its **Overview** screen.
+3. Select  **your virtual machine** (In my example `mongodb-nationalparks` virtual machine) to open its **Overview** screen.
 
 4. On the **Disks** tab, click the **PVC name** of the `PersistingHotplug` disk.
 
@@ -88,7 +88,7 @@ Size of the hot-plugged disk should be as 3GB instead of 2GB.
    
 2. Click the **Virtual Machines** tab.
    
-3. Select `mongodb-nationalparks` virtual machine to open its **Overview** screen.
+3. Select **your virtual machine** (In my example `mongodb-nationalparks` virtual machine) to open its **Overview** screen.
 
 4. Navigate to the "**Console**" tab. You'll be able to login with "**redhat/openshift**" (if you're not already logged in), noting that you may have to click on the console window for it to capture your input.
 
@@ -112,7 +112,7 @@ It's possible to hot-**un**plug virtual disks when you want to remove them witho
    
 2. Click the **Virtual Machines** tab.
    
-3. Select `mongodb-nationalparks` virtual machine to open its **Overview** screen.
+3. Select **your virtual machine** (In my example `mongodb-nationalparks` virtual machine) to open its **Overview** screen.
 
 4. Click the **Disks** tab. The page displays a list of disks attached to the virtual machine.
 
@@ -133,7 +133,7 @@ Once you click **Detach** to hot-unplug the disk, it's detached from the running
    
 2. Click the **Virtual Machines** tab.
    
-3. Select `mongodb-nationalparks` virtual machine to open its **Overview** screen.
+3. Select **your virtual machine** (In my example `mongodb-nationalparks` virtual machine) to open its **Overview** screen.
 
 4. Navigate to the "**Console**" tab. You'll be able to login with "**redhat/openshift**", noting that you may have to click on the console window for it to capture your input.
 
