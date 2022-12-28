@@ -1,7 +1,7 @@
 - Access to the OpenShift cluster
 - `CP VPN` connected
 - `OC` CLI tool installed - [Click here]() to download
-- `virtctl` tool installed - [Click here] () to download
+- `virtctl` tool installed - [Click here]() to download
 - GitHub account
 
 
