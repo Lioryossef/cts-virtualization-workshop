@@ -3,7 +3,7 @@ Now that you've had a chance to dive into how OpenShift virtualisation works at 
 However, the need for an easy to use, developer friendly User Experience is also a key value for OpenShift and OpenShift virtualisation. Let's take a look at some of the outcomes and actions from the previous labs and how they can be achived and/or reviewed from within OpenShift's exceptional UI.
 
 ### Connecting to the console
-
+ 
 <img width="1412" alt="Screen Shot 2022-07-31 at 0 52 02" src="https://user-images.githubusercontent.com/64369864/181997441-da229f61-309e-4c58-ade1-47ae0afcb546.png">
 
 ### Virtual Machines in OpenShift!
