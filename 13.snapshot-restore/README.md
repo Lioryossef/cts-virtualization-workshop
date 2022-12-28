@@ -87,8 +87,6 @@ sudo rm -rf /var/lib/mongo/*
 sudo systemctl start mongod
 ```
 
-Now you can check by refreshing `ParksMap`[http://parksmap-parksmap-project-namespace.apps.master.aelfassy.com](http://parksmap-%parksmap-project-namespace%.%cluster_subdomain%), it should now **fail** to load national parks locations from the backend service and no longer display them on the map. MLB Parks should still be fine (check the USA map for these) as these come from the other MongoDB database VM.
-
 ### Exercise: Restoring a virtual machine from a snapshot in the web console
 
 In this exercise, let's restore our MongoDB database VM by using the web console to the snapshot created in the previous exercise. You can only restore to a powered off (offline) VM so we will first power off the virtual machine in this exercise.
@@ -110,9 +108,9 @@ Once you click Restore to restore vm from the snapshot, it initiates snapshot re
 
 ![Screen Shot 2022-08-06 at 23 03 45](https://user-images.githubusercontent.com/64369864/183264487-62632131-aff9-4ade-8fa2-0c4901f31a16.png)
 
-After the snapshot was restored successfully and its status become **Ready**, you can then click **Actions** → **Start Virtual Machine** to power it on. Once the VM is powered on and boots successfully, you can refresh `ParksMap` [http://parksmap-parksmap-project-namespace.apps.master.aelfassy.com](http://parksmap-%parksmap-project-namespace%.%cluster_subdomain%). It should now successfully load national parks locations again from the restored backend service and start displaying them on the map again, but please note it may take a few minutes for the VM to start up and for MongoDB to start serving data again.
+After the snapshot was restored successfully and its status become **Ready**, you can then click **Actions** → **Start Virtual Machine** to power it on. 
 
-### Background: Virtual machine snapshot [http://parksmap-parksmap-project-namespace.apps.master.aelfassy.com](http://parksmap-%parksmap-project-namespace%.%cluster_subdomain%) controller and custom resource definitions (CRDs)
+### Background: Virtual machine snapshot controller and custom resource definitions (CRDs)
 
 The VM snapshot feature introduces three new API objects defined as CRDs for managing snapshots
 
@@ -290,8 +288,6 @@ To see how to restore the VM in the CLI, let's delete the VM's boot disk complet
 
 ![Screen Shot 2022-08-06 at 23 11 49](https://user-images.githubusercontent.com/64369864/183264706-f6c80f0d-0cd7-4f95-89c0-7bf94e6fa660.png)
 
-Now you can check by refreshing `ParksMap` [http://parksmap-parksmap-project-namespace.apps.master.aelfassy.com](http://parksmap-%parksmap-project-namespace%.%cluster_subdomain%), and as before it should **fail** to load national parks locations from the backend service and no longer display them on the map.
-
 # Exercise: Restore the VM's boot disk
 
 In this exercise, let's restore our MongoDB database VM (by using the CLI) to the snapshot created in the previous exercise.
@@ -401,6 +397,6 @@ You'll know the snapshot is restored syccesfsfully when it's `complete` flag is 
 oc describe vmsnapshot mongodb-nationalparks-snap1 | grep true
 ```
 
-You can now start your VM back up. From the console go to **Actions** → **Start Virtual Machine** to power the VM on, and you will have likely noticed that the root disk has been automatically reattached. Once the VM is powered on and boots successfully, you can refresh `ParksMap` [http://parksmap-parksmap-project-namespace.apps.master.aelfassy.com](http://parksmap-%parksmap-project-namespace%.%cluster_subdomain%), again after a few minutes of boot-up time it should successfully load national parks locations from the backend service and start displaying them on the map again.
+You can now start your VM back up. From the console go to **Actions** → **Start Virtual Machine** to power the VM on, and you will have likely noticed that the root disk has been automatically reattached. 
 
 That's it for taking VM snapshots and performing restores - we've created snapshots of our MongoDB database VM using both the OpenShift web console and CLI, and restored it after both deleting data files on the root disk and removing the underlying VM disk entirely.
