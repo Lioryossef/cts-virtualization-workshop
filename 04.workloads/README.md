@@ -6,7 +6,7 @@ The virtual machine we're going to create will have the following properties
 - Lastly, we will do Live Migrate to the instance move to another node (we will explore this in more depth in a later lab).
 
 <img width="687" alt="Screen Shot 2022-07-17 at 23 59 44" src="https://user-images.githubusercontent.com/64369864/179424557-6288110b-2a5a-407f-87bb-ae64da849b0f.png">
-
+ 
 Once the OpenShift virtualization operator is installed under the workloads tab found the virtualization option, Now virtual machines can be created. Has to be repeated for each VMs in the project.
 - Click Workloads → Virtualization → < Your project > → Create Virtual Machine.
 - Choose a template, In this case, Red Hat Enterprise Linux 8.0+ was chosen.
