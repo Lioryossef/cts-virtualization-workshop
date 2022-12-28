@@ -2,7 +2,7 @@
 It is expected to have **dynamic reconfiguration** capabilities for VMs today, such as CPU/Memory/Storage/Network hot-plug/hot-unplug. Although these capabilities have been around for the traditional virtualisation platforms, it is a particularly challenging feature to implement in a **Kubernetes** platform because of the Kubernetes principle of **immutable pods**, where once deployed they are never modified. If something needs to be changed, you never do so directly on the Pod. Instead, you’ll build and deploy a new one that has all your needed changes baked in.
 
 OpenShift Virtualization strives to have these dynamic reconfiguration capabilities for VMs although it's a Kubernetes-based platform. In the 4.9 release, hot-plugging virtual disks to a running virtual machine is supported as a [Technology Preview](https://access.redhat.com/support/offerings/techpreview) feature, so as a VM owner, you are able to attach and detach storage on demand.
-
+ 
 ### Exercise: Hot-plugging a virtual disk using the web console
 In OpenShift Virtualization it's possible to hot-plug and hot-unplug virtual disks without stopping your virtual machine. This capability is helpful when you need to add storage to a running virtual machine without incurring down-time. When you hot-plug a virtual disk, you attach a virtual disk to a virtual machine instance while the virtual machine is running. When you hot-unplug a virtual disk, you detach a virtual disk from a virtual machine instance while the virtual machine is running. Only data volumes and persistent volume claims (PVCs) can be hot-plugged and hot-unplugged. You cannot hot-plug or hot-unplug *container* disks.
 
