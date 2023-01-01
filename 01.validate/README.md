@@ -7,64 +7,6 @@ oc whoami
 ```
 This should return "**system:< user >**".
 
-Check your cluster nodes
-
-```execute
-oc get nodes
-```
-
-You should be able to see the list of nodes as below
-
-~~~bash
-NAME                                                       STATUS   ROLES    AGE   VERSION
-master-0.c.almog-elfassy.internal                          Ready    master   14d   v1.23.5+3afdacb
-master-1.c.almog-elfassy.internal                          Ready    master   14d   v1.23.5+3afdacb
-master-2.c.almog-elfassy.internal                          Ready    master   14d   v1.23.5+3afdacb
-worker-b-4vbz5.c.almog-elfassy.internal                    Ready    worker   14d   v1.23.5+3afdacb
-worker-c-9fj7h.c.almog-elfassy.internal                    Ready    worker   14d   v1.23.5+3afdacb
-worker-d-hbq8l.c.almog-elfassy.internal                    Ready    worker   14d   v1.23.5+3afdacb
-~~~
-
-
-Check the cluster version 
-
-```execute
-oc get clusterversion
-```
-
-Then you should see the following (your minor version may be different, but should be no less than below):
-
-~~~bash
-NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
-version   4.10.18   True        False         14d     Cluster version is 4.10.18
-~~~
-
-Check the cluster opertators
-
-```execute
-oc get co
-```
-This command will list the all cluster operators, the main components of OpenShift itself, and their availability as shown below:
-
-~~~bash
-NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
-authentication                             4.10.18   True        False         False      14d
-baremetal                                  4.10.18   True        False         False      14d
-cloud-controller-manager                   4.10.18   True        False         False      14d
-cloud-credential                           4.10.18   True        False         False      14d
-cluster-autoscaler                         4.10.18   True        False         False      14d
-config-operator                            4.10.18   True        False         False      14d
-console                                    4.10.18   True        False         False      14d
-csi-snapshot-controller                    4.10.18   True        False         False      14d
-dns                                        4.10.18   True        False         False      14d
-etcd                                       4.10.18   True        False         False      14d
-image-registry                             4.10.18   True        False         False      114m
-ingress                                    4.10.18   True        False         False      14d
-(...)
-~~~
-
-----
-
 # Making sure OpenShift is fully functional
 
 Create a new project 
@@ -72,7 +14,6 @@ Create a new project
 ```execute
 oc new-project < your-name >
 ```
-
 Now execute following command to deploy example application
 
 ```execute
