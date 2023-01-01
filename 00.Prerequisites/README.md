@@ -4,6 +4,8 @@
 - `virtctl` tool installed - [Click here]() to download
 - GitHub account
 
+#### Copy oc login (CLI)
+
 
 #### Command Line Interface (CLI)
 
